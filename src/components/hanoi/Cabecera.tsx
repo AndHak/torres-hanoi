@@ -30,7 +30,9 @@ export function Cabecera({
           Presentado por:
           <p className="flex flex-col">
             <span>Andres Felipe Martinez Guerra</span>
-            <span>Sebastian David Ordonez Bolanos</span>
+            <span>Sebastian David Ordoñez Bolaños</span>
+            <span>Juan Felipe Pantoja Andrade</span>
+            <span>Brigith Daniela Espinosa Matabanchoy</span>
           </p>
         </h2>
         <p className="text-sm text-slate-500">
