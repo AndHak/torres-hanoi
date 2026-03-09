@@ -24,20 +24,17 @@ export function Cabecera({
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3 text-slate-900">
           Torres de Hanoi
-          <span className="text-slate-400 font-normal text-lg">— Algoritmo A*</span>
+          <span className="text-slate-600 font-normal text-lg">— Algoritmo A*</span>
         </h1>
         <h2 className="flex flex-col">
           Presentado por:
-          <p className="flex flex-col text-sm">
+          <p className="flex flex-col text-sm text-zinc-800 ml-3">
             <span>Andres Felipe Martinez Guerra</span>
             <span>Sebastian David Ordoñez Bolaños</span>
             <span>Juan Felipe Pantoja Andrade</span>
             <span>Brigith Daniela Espinosa Matabanchoy</span>
           </p>
         </h2>
-        <p className="text-sm text-slate-500">
-          Resolución con búsqueda informada y heurísticas.
-        </p>
       </div>
 
       <div className="flex items-center gap-3">
