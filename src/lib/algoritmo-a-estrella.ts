@@ -2,21 +2,16 @@
 // ALGORITMO A* PARA TORRES DE HANOI
 // ==============================
 //
+// Traducción fiel del código Python proporcionado.
+//
 // FUNCIÓN DE EVALUACIÓN:
 //   f(n) = g(n) + h(n)
 //
-//   g(n) = Costo acumulado de la RUTA desde el estado inicial hasta el nodo n.
-//          Cada movimiento de disco tiene un costo de 1.
-//          Entonces g(n) = número de movimientos realizados hasta llegar al nodo n.
-//          Este valor se SUMA porque representa el costo ya gastado.
+//   g(n) = Costo acumulado de la RUTA (número de movimientos realizados)
+//   h(n) = Valor HEURÍSTICO (estimación del costo restante)
 //
-//   h(n) = Valor HEURÍSTICO que estima el costo restante desde el nodo n
-//          hasta el estado objetivo. Depende del estado actual de las torres.
-//          Se calcula según la heurística elegida.
-//
-//   El algoritmo A* selecciona siempre el nodo con menor f(n),
-//   es decir, el que tiene la suma más baja de costo real + estimación.
-//
+// ==============================
+
 // ==============================
 // TIPOS DE DATOS
 // ==============================
@@ -24,16 +19,16 @@
 // Un estado es un arreglo de 3 torres, cada torre tiene discos (números)
 export type Estado = number[][];
 
-// Cada paso guardado en el resultado
+// Cada paso del camino solución
 export interface Paso {
   estado: Estado;
-  g: number;         // g(n): costo de la ruta (movimientos realizados)
-  h: number;         // h(n): valor heurístico (estimación al objetivo)
-  f: number;         // f(n) = g(n) + h(n): función de evaluación total
+  g: number;         // g(n): costo de la ruta
+  h: number;         // h(n): valor heurístico
+  f: number;         // f(n) = g(n) + h(n)
   movimiento: string;
 }
 
-// Cada iteración del algoritmo (modo detallado)
+// Cada iteración del algoritmo (modo paso a paso)
 export interface Iteracion {
   numeroPaso: number;
   estadoActual: Estado;
@@ -41,9 +36,16 @@ export interface Iteracion {
   h: number;
   f: number;
   movimiento: string;
-  cantidadAbiertos: number;
-  cantidadCerrados: number;
-  sucesoresGenerados: { estado: Estado; movimiento: string; f: number; g: number; h: number }[];
+  // Los nodos abiertos y cerrados como texto (para mostrar)
+  nodosAbiertos: string[];
+  nodosCerrados: string[];
+  sucesoresGenerados: {
+    estado: Estado;
+    movimiento: string;
+    g: number;
+    h: number;
+    f: number;
+  }[];
 }
 
 // Resultado final del algoritmo
@@ -56,22 +58,23 @@ export interface Resultado {
 }
 
 // ==============================
-// FUNCIONES AUXILIARES
+// REPRESENTACIÓN DEL ESTADO
 // ==============================
 
-// Convierte el estado a texto para poder compararlo (como tupla en Python)
+// Convierte el estado a texto para poder compararlo
+// Equivalente a estado_a_tupla() en Python
 export function estadoATexto(estado: Estado): string {
-  // Ejemplo: "3,2,1|0|0" para torre1=[3,2,1], torre2=[], torre3=[]
-  const resultado = estado.map(function (torre) {
-    return torre.join(",");
-  });
-  return resultado.join("|");
+  var partes = [];
+  for (var i = 0; i < estado.length; i++) {
+    partes.push("(" + estado[i].join(",") + ")");
+  }
+  return "(" + partes.join(", ") + ")";
 }
 
-// Copia profunda del estado (para no modificar el original)
+// Copia profunda del estado (equivalente a copy.deepcopy)
 export function copiarEstado(estado: Estado): Estado {
-  const copia: Estado = [];
-  for (let i = 0; i < estado.length; i++) {
+  var copia: Estado = [];
+  for (var i = 0; i < estado.length; i++) {
     copia.push([...estado[i]]);
   }
   return copia;
@@ -80,16 +83,12 @@ export function copiarEstado(estado: Estado): Estado {
 // ==============================
 // HEURÍSTICAS
 // ==============================
-//
-// Cada heurística estima h(n): el costo RESTANTE para llegar al objetivo.
-// Una buena heurística es ADMISIBLE (nunca sobreestima el costo real).
-// Esto garantiza que A* encuentre la solución óptima.
-//
 
-// Heurística 1: Cantidad de discos fuera de la torre destino
-export function heuristica1_discosDescolocados(estado: Estado, torreObjetivo: number): number {
-  let total = 0;
-  for (let i = 0; i < 3; i++) {
+// Contar discos fuera de la torre objetivo
+// Equivalente a contar_discos_fuera() en Python
+export function contarDiscosFuera(estado: Estado, torreObjetivo: number): number {
+  var total = 0;
+  for (var i = 0; i < 3; i++) {
     if (i !== torreObjetivo) {
       total = total + estado[i].length;
     }
@@ -97,130 +96,62 @@ export function heuristica1_discosDescolocados(estado: Estado, torreObjetivo: nu
   return total;
 }
 
-// Heurística 2: Suma de distancias de cada disco a su posición objetivo
-// Si un disco está en torre 0 y objetivo es torre 2, distancia = 2
-// Si un disco está en torre 1 y objetivo es torre 2, distancia = 1
-// Si un disco está en torre 2 (objetivo), distancia = 0
-export function heuristica2_sumaDistancias(estado: Estado, torreObjetivo: number): number {
-  let sumaTotal = 0;
-  for (let indiceTorre = 0; indiceTorre < 3; indiceTorre++) {
-    const torre = estado[indiceTorre];
-    for (let j = 0; j < torre.length; j++) {
-      // Distancia = diferencia absoluta entre torre actual y torre objetivo
-      const distancia = Math.abs(indiceTorre - torreObjetivo);
-      sumaTotal = sumaTotal + distancia;
-    }
-  }
-  return sumaTotal;
+// Heurística clásica: discos fuera de la torre destino
+// Equivalente a heuristica_clasica() en Python
+export function heuristicaClasica(estado: Estado, torreObjetivo: number): number {
+  return contarDiscosFuera(estado, torreObjetivo);
 }
 
-// Heurística 3: Movimientos para colocar el disco más grande correctamente
-// Considera los discos que bloquean al disco más grande
-export function heuristica3_discoGrande(estado: Estado, torreObjetivo: number, numeroDiscos: number): number {
-  const discoMasGrande = numeroDiscos;
-
-  // Buscar en qué torre está el disco más grande
-  let torreDondeEsta = -1;
-  let posicionEnTorre = -1;
-
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < estado[i].length; j++) {
-      if (estado[i][j] === discoMasGrande) {
-        torreDondeEsta = i;
-        posicionEnTorre = j;
-      }
-    }
-  }
-
-  // Si ya está en la torre objetivo y en la base (posición 0), no hay costo
-  if (torreDondeEsta === torreObjetivo && posicionEnTorre === 0) {
-    // Contar cuántos discos encima no están bien colocados
-    let discosDescolocados = 0;
-    for (let i = 0; i < 3; i++) {
-      if (i !== torreObjetivo) {
-        discosDescolocados = discosDescolocados + estado[i].length;
-      }
-    }
-    return discosDescolocados;
-  }
-
-  // Si el disco grande NO está en la torre objetivo:
-  // Necesitamos mover todos los discos encima de él + mover el disco grande + recolocar
-  if (torreDondeEsta === -1) {
-    return 0; // No debería pasar, pero por seguridad
-  }
-
-  // Contar discos encima del disco grande en su torre actual
-  const discosEncima = estado[torreDondeEsta].length - posicionEnTorre - 1;
-
-  // Costo estimado: mover discos encima (2^discosEncima - 1) + 1 (mover el grande)
-  // + mover los demás discos restantes
-  let costoEstimado = discosEncima + 1;
-
-  // Sumar los discos que están en otras torres (que tampoco están en objetivo)
-  for (let i = 0; i < 3; i++) {
-    if (i !== torreObjetivo) {
-      costoEstimado = costoEstimado + estado[i].length;
-    }
-  }
-
-  // Evitar doble conteo del disco grande
-  if (torreDondeEsta !== torreObjetivo) {
-    costoEstimado = costoEstimado - 1; // Ya lo contamos con el +1
-  }
-
-  return Math.max(costoEstimado, heuristica1_discosDescolocados(estado, torreObjetivo));
-}
-
-// ==============================
-// CALCULAR HEURÍSTICA SEGÚN EL TIPO
-// ==============================
-
-export function calcularHeuristica(
+// Heurística personalizada: evalúa una fórmula matemática
+// Equivalente a heuristica_personalizada() en Python
+// Variables disponibles: k (discos fuera), n (total de discos)
+export function heuristicaPersonalizada(
   estado: Estado,
   torreObjetivo: number,
-  tipoHeuristica: number,
-  numeroDiscos: number
+  formula: string,
+  nDiscos: number
 ): number {
-  if (tipoHeuristica === 1) {
-    return heuristica1_discosDescolocados(estado, torreObjetivo);
+  var k = contarDiscosFuera(estado, torreObjetivo);
+  var n = nDiscos;
+
+  try {
+    // Reemplazar ^ por ** para potencias
+    var formulaLimpia = formula.replace(/\^/g, "**");
+    // Reemplazar math.log por Math.log, etc.
+    formulaLimpia = formulaLimpia.replace(/math\.log/g, "Math.log");
+    formulaLimpia = formulaLimpia.replace(/math\.sqrt/g, "Math.sqrt");
+    formulaLimpia = formulaLimpia.replace(/math\.pow/g, "Math.pow");
+    formulaLimpia = formulaLimpia.replace(/math\.ceil/g, "Math.ceil");
+    formulaLimpia = formulaLimpia.replace(/math\.floor/g, "Math.floor");
+
+    var funcionEvaluar = new Function("k", "n", "Math", "return " + formulaLimpia);
+    var resultado = funcionEvaluar(k, n, Math);
+    return Math.max(0, Number(resultado));
+  } catch (error) {
+    return 0;
   }
-  if (tipoHeuristica === 2) {
-    return heuristica2_sumaDistancias(estado, torreObjetivo);
-  }
-  if (tipoHeuristica === 3) {
-    return heuristica3_discoGrande(estado, torreObjetivo, numeroDiscos);
-  }
-  return 0;
 }
 
 // ==============================
-// GENERAR SUCESORES (HIJOS)
+// GENERAR SUCESORES
 // ==============================
 
+// Equivalente a generar_sucesores() en Python
 export function generarSucesores(estado: Estado): { nuevoEstado: Estado; movimiento: string }[] {
-  const sucesores: { nuevoEstado: Estado; movimiento: string }[] = [];
+  var sucesores: { nuevoEstado: Estado; movimiento: string }[] = [];
 
-  for (let origen = 0; origen < 3; origen++) {
-    // Solo si la torre origen tiene discos
-    if (estado[origen].length > 0) {
-      // El disco de arriba de la torre origen
-      const disco = estado[origen][estado[origen].length - 1];
+  for (var i = 0; i < 3; i++) {
+    if (estado[i].length > 0) {
+      var disco = estado[i][estado[i].length - 1];
 
-      for (let destino = 0; destino < 3; destino++) {
-        if (origen !== destino) {
-          // Regla de Hanoi: solo mover si destino vacío o disco arriba es mayor
-          const torreDestino = estado[destino];
-          const destinoVacio = torreDestino.length === 0;
-          const discoDestinoMayor = !destinoVacio && torreDestino[torreDestino.length - 1] > disco;
-
-          if (destinoVacio || discoDestinoMayor) {
-            const copia = copiarEstado(estado);
-            const discoMovido = copia[origen].pop()!;
-            copia[destino].push(discoMovido);
-
-            const textoMovimiento = "Disco " + disco + ": Torre " + (origen + 1) + " → Torre " + (destino + 1);
-            sucesores.push({ nuevoEstado: copia, movimiento: textoMovimiento });
+      for (var j = 0; j < 3; j++) {
+        if (i !== j) {
+          // Regla de Hanoi: solo mover si destino vacío o disco de arriba es mayor
+          if (estado[j].length === 0 || estado[j][estado[j].length - 1] > disco) {
+            var nuevoEstado = copiarEstado(estado);
+            nuevoEstado[j].push(nuevoEstado[i].pop()!);
+            var movimiento = "Mover disco " + disco + " de Torre " + (i + 1) + " a Torre " + (j + 1);
+            sucesores.push({ nuevoEstado: nuevoEstado, movimiento: movimiento });
           }
         }
       }
@@ -234,171 +165,216 @@ export function generarSucesores(estado: Estado): { nuevoEstado: Estado; movimie
 // ALGORITMO A* PRINCIPAL
 // ==============================
 
+// Equivalente a a_estrella() en Python
 export function aEstrella(
-  numeroDiscos: number,
-  tipoHeuristica: number
+  nDiscos: number,
+  tipoHeuristica: number,
+  formula: string
 ): Resultado {
+
   // Estado inicial: todos los discos en la torre 1 (índice 0)
-  const estadoInicial: Estado = [[], [], []];
-  for (let i = numeroDiscos; i >= 1; i--) {
+  // Equivalente a: estado_inicial = [list(range(n_discos, 0, -1)), [], []]
+  var estadoInicial: Estado = [[], [], []];
+  for (var i = nDiscos; i >= 1; i--) {
     estadoInicial[0].push(i);
   }
 
   // Estado objetivo: todos los discos en la torre 3 (índice 2)
-  const torreObjetivo = 2;
+  // Equivalente a: estado_objetivo = [[], [], list(range(n_discos, 0, -1))]
+  var estadoObjetivo: Estado = [[], [], []];
+  for (var i = nDiscos; i >= 1; i--) {
+    estadoObjetivo[2].push(i);
+  }
+  var torreObjetivo = 2;
 
-  const estadoObjetivoTexto = estadoATexto([
-    [],
-    [],
-    Array.from({ length: numeroDiscos }, function (_, i) {
-      return numeroDiscos - i;
-    }),
-  ]);
+  // Texto del estado objetivo para comparar
+  var estadoObjetivoTexto = estadoATexto(estadoObjetivo);
 
-  // Lista de nodos abiertos (frontera de exploración)
+  // Lista de nodos abiertos
+  // En Python: abiertos = []  (con heapq)
+  // Aquí usamos un arreglo y buscamos el menor f manualmente
   interface NodoAbierto {
-    f: number;       // f(n) = g(n) + h(n)
-    g: number;       // g(n) = costo acumulado de la ruta
+    f: number;
+    g: number;
     estado: Estado;
     camino: string[];
     pasos: Paso[];
   }
 
-  const abiertos: NodoAbierto[] = [];
-  // Conjunto de nodos cerrados (ya visitados)
-  const cerrados = new Set<string>();
+  var abiertos: NodoAbierto[] = [];
 
-  // Calcular heurística del estado inicial
-  // g(inicial) = 0 porque no hemos hecho ningún movimiento
-  // h(inicial) = estimación heurística del estado inicial
-  const costoRutaInicial = 0; // g(n): no se ha recorrido ninguna ruta todavía
-  const hInicial = calcularHeuristica(estadoInicial, torreObjetivo, tipoHeuristica, numeroDiscos);
-  const fInicial = costoRutaInicial + hInicial; // f(n) = g(n) + h(n)
+  // Conjunto de cerrados
+  // En Python: cerrados = set()
+  var cerrados = new Set<string>();
 
-  // Agregar nodo inicial a la lista de abiertos
+  // Calcular valores iniciales
+  var gInicial = 0;
+  var hInicial: number;
+
+  if (tipoHeuristica === 1) {
+    hInicial = heuristicaClasica(estadoInicial, torreObjetivo);
+  } else {
+    hInicial = heuristicaPersonalizada(estadoInicial, torreObjetivo, formula, nDiscos);
+  }
+
+  var fInicial = gInicial + hInicial;
+
+  // Agregar nodo inicial
+  // En Python: heapq.heappush(abiertos, (f_inicial, g_inicial, estado_inicial, []))
   abiertos.push({
     f: fInicial,
-    g: costoRutaInicial,
+    g: gInicial,
     estado: estadoInicial,
     camino: [],
-    pasos: [
-      {
-        estado: estadoInicial,
-        g: costoRutaInicial,
-        h: hInicial,
-        f: fInicial,
-        movimiento: "Estado inicial",
-      },
-    ],
+    pasos: [{
+      estado: estadoInicial,
+      g: gInicial,
+      h: hInicial,
+      f: fInicial,
+      movimiento: "Estado inicial",
+    }],
   });
 
-  let nodosExpandidos = 0;
-  const iteraciones: Iteracion[] = [];
+  var paso = 0;
+  var iteraciones: Iteracion[] = [];
 
-  // Bucle principal del algoritmo
+  // Bucle principal
+  // En Python: while abiertos:
   while (abiertos.length > 0) {
-    // Buscar el nodo con menor f(n) en la lista de abiertos
-    let indiceMejor = 0;
-    for (let i = 1; i < abiertos.length; i++) {
+
+    // Buscar el nodo con menor f(n) (equivalente a heapq.heappop)
+    var indiceMejor = 0;
+    for (var i = 1; i < abiertos.length; i++) {
       if (abiertos[i].f < abiertos[indiceMejor].f) {
         indiceMejor = i;
       }
     }
 
     // Extraer el mejor nodo
-    const nodoActual = abiertos.splice(indiceMejor, 1)[0];
-    const textoEstado = estadoATexto(nodoActual.estado);
+    // En Python: f_actual, g_actual, estado_actual, camino = heapq.heappop(abiertos)
+    var nodoActual = abiertos.splice(indiceMejor, 1)[0];
+    var fActual = nodoActual.f;
+    var gActual = nodoActual.g;
+    var estadoActual = nodoActual.estado;
+    var caminoActual = nodoActual.camino;
+    var pasosActuales = nodoActual.pasos;
 
-    // Si ya fue visitado, saltar
-    if (cerrados.has(textoEstado)) {
+    // En Python: estado_t = estado_a_tupla(estado_actual)
+    var estadoTexto = estadoATexto(estadoActual);
+
+    // En Python: if estado_t in cerrados: continue
+    if (cerrados.has(estadoTexto)) {
       continue;
     }
 
-    // Marcar como visitado
-    cerrados.add(textoEstado);
+    // En Python: cerrados.add(estado_t)
+    cerrados.add(estadoTexto);
 
-    // Generar sucesores para registrarlos en la iteración
-    const sucesores = generarSucesores(nodoActual.estado);
+    // Generar sucesores para mostrar en iteraciones
+    var sucesores = generarSucesores(estadoActual);
 
-    // Calcular datos de los sucesores para mostrar
-    const sucesoresConDatos = sucesores.map(function (s) {
-      const hSucesor = calcularHeuristica(s.nuevoEstado, torreObjetivo, tipoHeuristica, numeroDiscos);
-      const gSucesor = nodoActual.g + 1;
-      return {
-        estado: s.nuevoEstado,
-        movimiento: s.movimiento,
+    // Calcular datos de cada sucesor
+    var sucesoresConDatos = [];
+    for (var i = 0; i < sucesores.length; i++) {
+      var sucesor = sucesores[i];
+      var gSucesor = gActual + 1;
+      var hSucesor: number;
+
+      if (tipoHeuristica === 1) {
+        hSucesor = heuristicaClasica(sucesor.nuevoEstado, torreObjetivo);
+      } else {
+        hSucesor = heuristicaPersonalizada(sucesor.nuevoEstado, torreObjetivo, formula, nDiscos);
+      }
+
+      sucesoresConDatos.push({
+        estado: sucesor.nuevoEstado,
+        movimiento: sucesor.movimiento,
         g: gSucesor,
         h: hSucesor,
         f: gSucesor + hSucesor,
-      };
+      });
+    }
+
+    // Guardar los nodos abiertos como texto (equivalente al print de abiertos en Python)
+    var abiertosTexto: string[] = [];
+    for (var i = 0; i < abiertos.length; i++) {
+      abiertosTexto.push(estadoATexto(abiertos[i].estado));
+    }
+
+    // Guardar los nodos cerrados como texto (equivalente al print de cerrados en Python)
+    var cerradosTexto: string[] = [];
+    cerrados.forEach(function (valor) {
+      cerradosTexto.push(valor);
     });
 
-    // Guardar iteración
+    // Guardar iteración (equivalente al modo == 1 en Python)
     iteraciones.push({
-      numeroPaso: nodosExpandidos,
-      estadoActual: nodoActual.estado,
-      g: nodoActual.g,
-      h: nodoActual.f - nodoActual.g,
-      f: nodoActual.f,
-      movimiento: nodoActual.camino.length > 0
-        ? nodoActual.camino[nodoActual.camino.length - 1]
+      numeroPaso: paso,
+      estadoActual: estadoActual,
+      g: gActual,
+      h: fActual - gActual,
+      f: fActual,
+      movimiento: caminoActual.length > 0
+        ? caminoActual[caminoActual.length - 1]
         : "Estado inicial",
-      cantidadAbiertos: abiertos.length,
-      cantidadCerrados: cerrados.size,
+      nodosAbiertos: abiertosTexto,
+      nodosCerrados: cerradosTexto,
       sucesoresGenerados: sucesoresConDatos,
     });
 
-    // ¿Llegamos al objetivo?
-    if (textoEstado === estadoObjetivoTexto) {
+    // Verificar si llegamos al objetivo
+    // En Python: if estado_actual == estado_objetivo:
+    if (estadoTexto === estadoObjetivoTexto) {
       return {
-        pasos: nodoActual.pasos,
+        pasos: pasosActuales,
         iteraciones: iteraciones,
-        totalMovimientos: nodoActual.camino.length,
-        nodosExpandidos: nodosExpandidos,
+        totalMovimientos: caminoActual.length,
+        nodosExpandidos: paso,
         solucionEncontrada: true,
       };
     }
 
-    // Explorar sucesores (nodos hijos)
-    for (let i = 0; i < sucesores.length; i++) {
-      const sucesor = sucesores[i];
-      const textoSucesor = estadoATexto(sucesor.nuevoEstado);
+    // Explorar sucesores
+    // En Python: for sucesor, movimiento in generar_sucesores(estado_actual):
+    for (var i = 0; i < sucesores.length; i++) {
+      var sucesor = sucesores[i];
+      var sucesorTexto = estadoATexto(sucesor.nuevoEstado);
 
-      if (!cerrados.has(textoSucesor)) {
-        // g(n) = costo de la ruta: cada movimiento cuesta 1
-        // Entonces g(hijo) = g(padre) + 1
-        const costoRutaNuevo = nodoActual.g + 1;
+      // En Python: if sucesor_t not in cerrados:
+      if (!cerrados.has(sucesorTexto)) {
+        var gNuevo = gActual + 1;
+        var hNuevo: number;
 
-        // h(n) = estimación heurística del nuevo estado
-        const hNuevo = calcularHeuristica(sucesor.nuevoEstado, torreObjetivo, tipoHeuristica, numeroDiscos);
+        if (tipoHeuristica === 1) {
+          hNuevo = heuristicaClasica(sucesor.nuevoEstado, torreObjetivo);
+        } else {
+          hNuevo = heuristicaPersonalizada(sucesor.nuevoEstado, torreObjetivo, formula, nDiscos);
+        }
 
-        // f(n) = g(n) + h(n) → función de evaluación
-        // g se SUMA porque es un costo acumulado de la ruta seguida
-        const fNuevo = costoRutaNuevo + hNuevo;
+        var fNuevo = gNuevo + hNuevo;
 
+        // En Python: heapq.heappush(abiertos, (f_nuevo, g_nuevo, sucesor, camino + [movimiento]))
         abiertos.push({
           f: fNuevo,
-          g: costoRutaNuevo,
+          g: gNuevo,
           estado: sucesor.nuevoEstado,
-          camino: [...nodoActual.camino, sucesor.movimiento],
-          pasos: [
-            ...nodoActual.pasos,
-            {
-              estado: sucesor.nuevoEstado,
-              g: costoRutaNuevo,
-              h: hNuevo,
-              f: fNuevo,
-              movimiento: sucesor.movimiento,
-            },
-          ],
+          camino: [...caminoActual, sucesor.movimiento],
+          pasos: [...pasosActuales, {
+            estado: sucesor.nuevoEstado,
+            g: gNuevo,
+            h: hNuevo,
+            f: fNuevo,
+            movimiento: sucesor.movimiento,
+          }],
         });
       }
     }
 
-    nodosExpandidos = nodosExpandidos + 1;
+    // En Python: paso += 1
+    paso = paso + 1;
 
     // Seguridad: evitar bucles infinitos
-    if (nodosExpandidos > 20000) {
+    if (paso > 20000) {
       break;
     }
   }
@@ -408,7 +384,7 @@ export function aEstrella(
     pasos: [],
     iteraciones: iteraciones,
     totalMovimientos: 0,
-    nodosExpandidos: nodosExpandidos,
+    nodosExpandidos: paso,
     solucionEncontrada: false,
   };
 }

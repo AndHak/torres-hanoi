@@ -13,18 +13,19 @@ export default function PaginaPrincipal() {
   // ---------- ESTADO DE LA APP ----------
 
   // Configuración del algoritmo
-  const [numeroDiscos, setNumeroDiscos] = useState(3);
-  const [tipoHeuristica, setTipoHeuristica] = useState(1);
-  const [modoVisualizacion, setModoVisualizacion] = useState<"movimientos" | "iteraciones">("movimientos");
+  var [numeroDiscos, setNumeroDiscos] = useState(3);
+  var [tipoHeuristica, setTipoHeuristica] = useState(1);
+  var [formula, setFormula] = useState("2**k - 1");
+  var [modoVisualizacion, setModoVisualizacion] = useState<"movimientos" | "iteraciones">("movimientos");
 
   // Estado del algoritmo
-  const [resolviendo, setResolviendo] = useState(false);
-  const [resultado, setResultado] = useState<Resultado | null>(null);
+  var [resolviendo, setResolviendo] = useState(false);
+  var [resultado, setResultado] = useState<Resultado | null>(null);
 
   // Navegación
-  const [indicePasoActual, setIndicePasoActual] = useState(0);
-  const [reproduciendo, setReproduciendo] = useState(false);
-  const [velocidad, setVelocidad] = useState(500);
+  var [indicePasoActual, setIndicePasoActual] = useState(0);
+  var [reproduciendo, setReproduciendo] = useState(false);
+  var [velocidad, setVelocidad] = useState(500);
 
   // ---------- FUNCIONES ----------
 
@@ -43,7 +44,7 @@ export default function PaginaPrincipal() {
 
     // Pequeño timeout para que React muestre el loading
     setTimeout(function () {
-      const res = aEstrella(numeroDiscos, tipoHeuristica);
+      var res = aEstrella(numeroDiscos, tipoHeuristica, formula);
       setResultado(res);
       setIndicePasoActual(0);
       setResolviendo(false);
@@ -57,7 +58,7 @@ export default function PaginaPrincipal() {
     }
 
     // Determinar el total de pasos según el modo
-    const totalPasos = modoVisualizacion === "movimientos"
+    var totalPasos = modoVisualizacion === "movimientos"
       ? resultado.pasos.length
       : resultado.iteraciones.length;
 
@@ -66,9 +67,9 @@ export default function PaginaPrincipal() {
       return;
     }
 
-    const temporizador = setInterval(function () {
+    var temporizador = setInterval(function () {
       setIndicePasoActual(function (anterior) {
-        const siguiente = anterior + 1;
+        var siguiente = anterior + 1;
         if (siguiente >= totalPasos - 1) {
           setReproduciendo(false);
         }
@@ -89,23 +90,26 @@ export default function PaginaPrincipal() {
 
   // ---------- DATOS DERIVADOS ----------
 
-  // Estado actual de las torres para mostrar
+  // Estado actual de las torres para mostrar en el visualizador
   function obtenerEstadoActual(): number[][] {
     if (!resultado) {
       // Estado inicial: todos los discos en torre 1
-      const torre1: number[] = [];
-      for (let i = numeroDiscos; i >= 1; i--) {
+      var torre1: number[] = [];
+      for (var i = numeroDiscos; i >= 1; i--) {
         torre1.push(i);
       }
       return [torre1, [], []];
     }
 
     if (modoVisualizacion === "movimientos") {
-      const paso = resultado.pasos[indicePasoActual];
-      return paso ? paso.estado : [[], [], []];
+      var paso = resultado.pasos[indicePasoActual];
+      if (paso) return paso.estado;
+      return [[], [], []];
     } else {
-      const iteracion = resultado.iteraciones[Math.min(indicePasoActual, resultado.iteraciones.length - 1)];
-      return iteracion ? iteracion.estadoActual : [[], [], []];
+      var indiceSeguro = Math.min(indicePasoActual, resultado.iteraciones.length - 1);
+      var iteracion = resultado.iteraciones[indiceSeguro];
+      if (iteracion) return iteracion.estadoActual;
+      return [[], [], []];
     }
   }
 
@@ -133,18 +137,20 @@ export default function PaginaPrincipal() {
     if (!resultado) return {};
 
     if (modoVisualizacion === "movimientos") {
-      const paso = resultado.pasos[indicePasoActual];
+      var paso = resultado.pasos[indicePasoActual];
       if (!paso) return {};
       return { g: paso.g, h: paso.h, f: paso.f };
     } else {
-      const iteracion = resultado.iteraciones[Math.min(indicePasoActual, resultado.iteraciones.length - 1)];
+      var indiceSeguro = Math.min(indicePasoActual, resultado.iteraciones.length - 1);
+      var iteracion = resultado.iteraciones[indiceSeguro];
       if (!iteracion) return {};
       return { g: iteracion.g, h: iteracion.h, f: iteracion.f };
     }
   }
 
-  const estadoActual = obtenerEstadoActual();
-  const totalPasos = obtenerTotalPasos();
+  var estadoActual = obtenerEstadoActual();
+  var totalPasos = obtenerTotalPasos();
+  var datosNodo = obtenerDatosNodoActual();
 
   // ---------- RENDERIZADO ----------
 
@@ -168,6 +174,8 @@ export default function PaginaPrincipal() {
               cambiarNumeroDiscos={cambiarDiscos}
               tipoHeuristica={tipoHeuristica}
               cambiarTipoHeuristica={setTipoHeuristica}
+              formula={formula}
+              cambiarFormula={setFormula}
               modoVisualizacion={modoVisualizacion}
               cambiarModoVisualizacion={setModoVisualizacion}
               velocidad={velocidad}
@@ -190,9 +198,9 @@ export default function PaginaPrincipal() {
                 setReproduciendo(false);
                 setIndicePasoActual(indice);
               }}
-              gActual={obtenerDatosNodoActual().g}
-              hActual={obtenerDatosNodoActual().h}
-              fActual={obtenerDatosNodoActual().f}
+              gActual={datosNodo.g}
+              hActual={datosNodo.h}
+              fActual={datosNodo.f}
             />
           </div>
 
