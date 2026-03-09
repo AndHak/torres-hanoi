@@ -28,7 +28,7 @@ export function Cabecera({
         </h1>
         <h2 className="flex flex-col">
           Presentado por:
-          <p className="flex flex-col">
+          <p className="flex flex-col text-sm">
             <span>Andres Felipe Martinez Guerra</span>
             <span>Sebastian David Ordoñez Bolaños</span>
             <span>Juan Felipe Pantoja Andrade</span>
