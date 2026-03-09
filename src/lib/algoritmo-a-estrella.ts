@@ -2,8 +2,6 @@
 // ALGORITMO A* PARA TORRES DE HANOI
 // ==============================
 //
-// Traducción fiel del código Python proporcionado.
-//
 // FUNCIÓN DE EVALUACIÓN:
 //   f(n) = g(n) + h(n)
 //
@@ -62,7 +60,7 @@ export interface Resultado {
 // ==============================
 
 // Convierte el estado a texto para poder compararlo
-// Equivalente a estado_a_tupla() en Python
+// Equivalente a estado_a_tupla() en 
 export function estadoATexto(estado: Estado): string {
   var partes = [];
   for (var i = 0; i < estado.length; i++) {
@@ -85,7 +83,7 @@ export function copiarEstado(estado: Estado): Estado {
 // ==============================
 
 // Contar discos fuera de la torre objetivo
-// Equivalente a contar_discos_fuera() en Python
+// Equivalente a contar_discos_fuera() en 
 export function contarDiscosFuera(estado: Estado, torreObjetivo: number): number {
   var total = 0;
   for (var i = 0; i < 3; i++) {
@@ -97,13 +95,13 @@ export function contarDiscosFuera(estado: Estado, torreObjetivo: number): number
 }
 
 // Heurística clásica: discos fuera de la torre destino
-// Equivalente a heuristica_clasica() en Python
+// Equivalente a heuristica_clasica() en 
 export function heuristicaClasica(estado: Estado, torreObjetivo: number): number {
   return contarDiscosFuera(estado, torreObjetivo);
 }
 
 // Heurística personalizada: evalúa una fórmula matemática
-// Equivalente a heuristica_personalizada() en Python
+// Equivalente a heuristica_personalizada() en 
 // Variables disponibles: k (discos fuera), n (total de discos)
 export function heuristicaPersonalizada(
   estado: Estado,
@@ -136,7 +134,7 @@ export function heuristicaPersonalizada(
 // GENERAR SUCESORES
 // ==============================
 
-// Equivalente a generar_sucesores() en Python
+// Equivalente a generar_sucesores() en 
 export function generarSucesores(estado: Estado): { nuevoEstado: Estado; movimiento: string }[] {
   var sucesores: { nuevoEstado: Estado; movimiento: string }[] = [];
 
@@ -165,7 +163,7 @@ export function generarSucesores(estado: Estado): { nuevoEstado: Estado; movimie
 // ALGORITMO A* PRINCIPAL
 // ==============================
 
-// Equivalente a a_estrella() en Python
+// Equivalente a a_estrella() en 
 export function aEstrella(
   nDiscos: number,
   tipoHeuristica: number,
@@ -191,7 +189,7 @@ export function aEstrella(
   var estadoObjetivoTexto = estadoATexto(estadoObjetivo);
 
   // Lista de nodos abiertos
-  // En Python: abiertos = []  (con heapq)
+  // abiertos = []  (con heapq)
   // Aquí usamos un arreglo y buscamos el menor f manualmente
   interface NodoAbierto {
     f: number;
@@ -204,7 +202,7 @@ export function aEstrella(
   var abiertos: NodoAbierto[] = [];
 
   // Conjunto de cerrados
-  // En Python: cerrados = set()
+  // cerrados = set()
   var cerrados = new Set<string>();
 
   // Calcular valores iniciales
@@ -220,7 +218,7 @@ export function aEstrella(
   var fInicial = gInicial + hInicial;
 
   // Agregar nodo inicial
-  // En Python: heapq.heappush(abiertos, (f_inicial, g_inicial, estado_inicial, []))
+  // heapq.heappush(abiertos, (f_inicial, g_inicial, estado_inicial, []))
   abiertos.push({
     f: fInicial,
     g: gInicial,
@@ -239,7 +237,7 @@ export function aEstrella(
   var iteraciones: Iteracion[] = [];
 
   // Bucle principal
-  // En Python: while abiertos:
+  // while abiertos:
   while (abiertos.length > 0) {
 
     // Buscar el nodo con menor f(n) (equivalente a heapq.heappop)
@@ -251,7 +249,7 @@ export function aEstrella(
     }
 
     // Extraer el mejor nodo
-    // En Python: f_actual, g_actual, estado_actual, camino = heapq.heappop(abiertos)
+    // f_actual, g_actual, estado_actual, camino = heapq.heappop(abiertos)
     var nodoActual = abiertos.splice(indiceMejor, 1)[0];
     var fActual = nodoActual.f;
     var gActual = nodoActual.g;
@@ -259,15 +257,15 @@ export function aEstrella(
     var caminoActual = nodoActual.camino;
     var pasosActuales = nodoActual.pasos;
 
-    // En Python: estado_t = estado_a_tupla(estado_actual)
+    // estado_t = estado_a_tupla(estado_actual)
     var estadoTexto = estadoATexto(estadoActual);
 
-    // En Python: if estado_t in cerrados: continue
+    // if estado_t in cerrados: continue
     if (cerrados.has(estadoTexto)) {
       continue;
     }
 
-    // En Python: cerrados.add(estado_t)
+    // cerrados.add(estado_t)
     cerrados.add(estadoTexto);
 
     // Generar sucesores para mostrar en iteraciones
@@ -295,19 +293,19 @@ export function aEstrella(
       });
     }
 
-    // Guardar los nodos abiertos como texto (equivalente al print de abiertos en Python)
+    // Guardar los nodos abiertos como texto (equivalente al print de abiertos en )
     var abiertosTexto: string[] = [];
     for (var i = 0; i < abiertos.length; i++) {
       abiertosTexto.push(estadoATexto(abiertos[i].estado));
     }
 
-    // Guardar los nodos cerrados como texto (equivalente al print de cerrados en Python)
+    // Guardar los nodos cerrados como texto (equivalente al print de cerrados en )
     var cerradosTexto: string[] = [];
     cerrados.forEach(function (valor) {
       cerradosTexto.push(valor);
     });
 
-    // Guardar iteración (equivalente al modo == 1 en Python)
+    // Guardar iteración (equivalente al modo == 1 en )
     iteraciones.push({
       numeroPaso: paso,
       estadoActual: estadoActual,
@@ -323,7 +321,7 @@ export function aEstrella(
     });
 
     // Verificar si llegamos al objetivo
-    // En Python: if estado_actual == estado_objetivo:
+    // if estado_actual == estado_objetivo:
     if (estadoTexto === estadoObjetivoTexto) {
       return {
         pasos: pasosActuales,
@@ -335,12 +333,12 @@ export function aEstrella(
     }
 
     // Explorar sucesores
-    // En Python: for sucesor, movimiento in generar_sucesores(estado_actual):
+    // for sucesor, movimiento in generar_sucesores(estado_actual):
     for (var i = 0; i < sucesores.length; i++) {
       var sucesor = sucesores[i];
       var sucesorTexto = estadoATexto(sucesor.nuevoEstado);
 
-      // En Python: if sucesor_t not in cerrados:
+      // if sucesor_t not in cerrados:
       if (!cerrados.has(sucesorTexto)) {
         var gNuevo = gActual + 1;
         var hNuevo: number;
@@ -353,7 +351,7 @@ export function aEstrella(
 
         var fNuevo = gNuevo + hNuevo;
 
-        // En Python: heapq.heappush(abiertos, (f_nuevo, g_nuevo, sucesor, camino + [movimiento]))
+        // heapq.heappush(abiertos, (f_nuevo, g_nuevo, sucesor, camino + [movimiento]))
         abiertos.push({
           f: fNuevo,
           g: gNuevo,
@@ -370,7 +368,7 @@ export function aEstrella(
       }
     }
 
-    // En Python: paso += 1
+    // paso += 1
     paso = paso + 1;
 
     // Seguridad: evitar bucles infinitos

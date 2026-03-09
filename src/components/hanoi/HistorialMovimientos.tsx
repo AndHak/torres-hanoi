@@ -54,7 +54,7 @@ export function HistorialMovimientos({
         </div>
       </CardHeader>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0 max-h-[450px]">
         <div className="p-3" ref={referencia}>
           {!pasos ? (
             <div className="flex flex-col items-center justify-center text-center p-6 space-y-3 py-16">
