@@ -14,19 +14,16 @@
 // TIPOS DE DATOS
 // ==============================
 
-// Un estado es un arreglo de 3 torres, cada torre tiene discos (números)
 export type Estado = number[][];
 
-// Cada paso del camino solución
 export interface Paso {
   estado: Estado;
-  g: number;         // g(n): costo de la ruta
-  h: number;         // h(n): valor heurístico
-  f: number;         // f(n) = g(n) + h(n)
+  g: number;
+  h: number;
+  f: number;
   movimiento: string;
 }
 
-// Cada iteración del algoritmo (modo paso a paso)
 export interface Iteracion {
   numeroPaso: number;
   estadoActual: Estado;
@@ -34,7 +31,6 @@ export interface Iteracion {
   h: number;
   f: number;
   movimiento: string;
-  // Los nodos abiertos y cerrados como texto (para mostrar)
   nodosAbiertos: string[];
   nodosCerrados: string[];
   sucesoresGenerados: {
@@ -46,7 +42,6 @@ export interface Iteracion {
   }[];
 }
 
-// Resultado final del algoritmo
 export interface Resultado {
   pasos: Paso[];
   iteraciones: Iteracion[];
@@ -59,21 +54,34 @@ export interface Resultado {
 // REPRESENTACIÓN DEL ESTADO
 // ==============================
 
-// Convierte el estado a texto para poder compararlo
-// Equivalente a estado_a_tupla() en 
+/**
+ * Propósito: Convierte un Estado (arreglo) a un string para poder compararlo o guardarlo en un Set.
+ * Recibe   : estado (Estado)
+ * Retorna  : string
+ * * --- EJEMPLO DE ENTRADA Y SALIDA ---
+ * Entrada: [[3,2,1], [], []]
+ * Salida : "((3,2,1), (), ())"
+ */
 export function estadoATexto(estado: Estado): string {
-  var partes = [];
-  for (var i = 0; i < estado.length; i++) {
+  const partes: string[] = [];
+  for (let i = 0; i < estado.length; i++) {
     partes.push("(" + estado[i].join(",") + ")");
   }
   return "(" + partes.join(", ") + ")";
 }
 
-// Copia profunda del estado (equivalente a copy.deepcopy)
+/**
+ * Propósito: Crea una copia profunda del estado para no modificar los arreglos originales por referencia.
+ * Recibe   : estado (Estado)
+ * Retorna  : Estado (nuevo arreglo)
+ * * --- EJEMPLO DE ENTRADA Y SALIDA ---
+ * Entrada: [[3,2], [1], []]
+ * Salida : [[3,2], [1], []] (en una nueva dirección de memoria)
+ */
 export function copiarEstado(estado: Estado): Estado {
-  var copia: Estado = [];
-  for (var i = 0; i < estado.length; i++) {
-    copia.push([...estado[i]]);
+  const copia: Estado = [];
+  for (let i = 0; i < estado.length; i++) {
+    copia.push([...estado[i]]); // El operador spread [...] clona el sub-arreglo
   }
   return copia;
 }
@@ -82,51 +90,69 @@ export function copiarEstado(estado: Estado): Estado {
 // HEURÍSTICAS
 // ==============================
 
-// Contar discos fuera de la torre objetivo
-// Equivalente a contar_discos_fuera() en 
+/**
+ * Propósito: Cuenta cuántos discos NO están en la torre objetivo.
+ * Recibe   : estado (Estado), torreObjetivo (number: 0, 1 o 2)
+ * Retorna  : number -> Cantidad de discos fuera de su lugar.
+ * * --- EJEMPLOS DE ENTRADA Y SALIDA ---
+ * Entrada: estado: [[3,2], [1], []], torreObjetivo: 2
+ * Salida : 3 (Los discos 3, 2 y 1 no están en la torre 3)
+ * 
+ * Entrada: estado: [[3], [], [2,1]], torreObjetivo: 2
+ * Salida : 1 (Solo el disco 3 está fuera de la torre 3)
+ */
 export function contarDiscosFuera(estado: Estado, torreObjetivo: number): number {
-  var total = 0;
-  for (var i = 0; i < 3; i++) {
+  let total = 0;
+  for (let i = 0; i < 3; i++) {
     if (i !== torreObjetivo) {
-      total = total + estado[i].length;
+      total += estado[i].length;
     }
   }
   return total;
 }
 
-// Heurística clásica: discos fuera de la torre destino
-// Equivalente a heuristica_clasica() en 
+/**
+ * Propósito: Calcula la estimación h(n) usando la heurística clásica.
+ * Recibe   : estado (Estado), torreObjetivo (number)
+ * Retorna  : number -> Valor heurístico.
+ * * --- EJEMPLO ---
+ * Entrada: estado: [[3], [2], [1]], torreObjetivo: 2, nDiscos: 3
+ * Salida : 2 (Los discos 3 y 2 están fuera de la torre 2)
+ */
 export function heuristicaClasica(estado: Estado, torreObjetivo: number): number {
   return contarDiscosFuera(estado, torreObjetivo);
 }
 
-// Heurística personalizada: evalúa una fórmula matemática
-// Equivalente a heuristica_personalizada() en 
-// Variables disponibles: k (discos fuera), n (total de discos)
+/**
+ * Propósito: Evalúa una fórmula matemática inyectada por el usuario para calcular h(n).
+ * Recibe   : estado, torreObjetivo, formula (string), nDiscos
+ * Retorna  : number -> Resultado de la fórmula, garantizando que no sea negativo (Math.max(0, ...)).
+ * * --- EJEMPLOS DE EVALUACIÓN ---
+ * Entrada: k=3, n=3, formula="k * 2"
+ * Salida : 6
+ * 
+ * Entrada: k=3, n=3, formula="Math.pow(2, k) - 1"
+ * Salida : 7
+ */
 export function heuristicaPersonalizada(
   estado: Estado,
   torreObjetivo: number,
   formula: string,
   nDiscos: number
 ): number {
-  var k = contarDiscosFuera(estado, torreObjetivo);
-  var n = nDiscos;
+  const k = contarDiscosFuera(estado, torreObjetivo);
+  const n = nDiscos;
 
   try {
-    // Reemplazar ^ por ** para potencias
-    var formulaLimpia = formula.replace(/\^/g, "**");
-    // Reemplazar math.log por Math.log, etc.
-    formulaLimpia = formulaLimpia.replace(/math\.log/g, "Math.log");
-    formulaLimpia = formulaLimpia.replace(/math\.sqrt/g, "Math.sqrt");
-    formulaLimpia = formulaLimpia.replace(/math\.pow/g, "Math.pow");
-    formulaLimpia = formulaLimpia.replace(/math\.ceil/g, "Math.ceil");
-    formulaLimpia = formulaLimpia.replace(/math\.floor/g, "Math.floor");
+    let formulaLimpia = formula.replace(/\^/g, "**");
+    formulaLimpia = formulaLimpia.replace(/math\./g, "Math."); // Simplifica el reemplazo de la librería Math
 
-    var funcionEvaluar = new Function("k", "n", "Math", "return " + formulaLimpia);
-    var resultado = funcionEvaluar(k, n, Math);
+    const funcionEvaluar = new Function("k", "n", "Math", "return " + formulaLimpia);
+    const resultado = funcionEvaluar(k, n, Math);
+    
     return Math.max(0, Number(resultado));
   } catch (error) {
-    return 0;
+    return 0; // Si la fórmula falla, asumimos costo 0 (se vuelve algoritmo de Dijkstra)
   }
 }
 
@@ -134,22 +160,45 @@ export function heuristicaPersonalizada(
 // GENERAR SUCESORES
 // ==============================
 
-// Equivalente a generar_sucesores() en 
+/**
+ * Propósito: Genera todos los movimientos válidos desde un estado actual.
+ * Regla    : No se puede colocar un disco grande sobre uno pequeño.
+ * Recibe   : estado (Estado)
+ * Retorna  : Arreglo de objetos con el nuevo estado y el string del movimiento realizado.
+ * * --- EJEMPLOS DE ENTRADA Y SALIDA ---
+ * * ITERACIÓN 1 (Estado Inicial):
+ * Entrada: [[3,2,1], [], []]
+ * Salida : [
+ * { nuevoEstado: [[3,2], [1], []], movimiento: "Mover disco 1 de Torre 1 a Torre 2" },
+ * { nuevoEstado: [[3,2], [], [1]], movimiento: "Mover disco 1 de Torre 1 a Torre 3" }
+ * ]
+ * * ITERACIÓN 2 (Tras mover a la Torre 2):
+ * Entrada: [[3,2], [1], []]
+ * Salida : [
+ * { nuevoEstado: [[3], [1], [2]], movimiento: "Mover disco 2 de Torre 1 a Torre 3" },
+ * { nuevoEstado: [[3,2,1], [], []], movimiento: "Mover disco 1 de Torre 2 a Torre 1" } // Nota: A* descartará este luego por estar en "cerrados"
+ * ]
+ */
 export function generarSucesores(estado: Estado): { nuevoEstado: Estado; movimiento: string }[] {
-  var sucesores: { nuevoEstado: Estado; movimiento: string }[] = [];
+  const sucesores: { nuevoEstado: Estado; movimiento: string }[] = [];
 
-  for (var i = 0; i < 3; i++) {
+  // i = Torre de Origen, j = Torre de Destino
+  for (let i = 0; i < 3; i++) {
     if (estado[i].length > 0) {
-      var disco = estado[i][estado[i].length - 1];
+      const disco = estado[i][estado[i].length - 1]; // Toma el disco superior
 
-      for (var j = 0; j < 3; j++) {
+      for (let j = 0; j < 3; j++) {
         if (i !== j) {
-          // Regla de Hanoi: solo mover si destino vacío o disco de arriba es mayor
-          if (estado[j].length === 0 || estado[j][estado[j].length - 1] > disco) {
-            var nuevoEstado = copiarEstado(estado);
-            nuevoEstado[j].push(nuevoEstado[i].pop()!);
-            var movimiento = "Mover disco " + disco + " de Torre " + (i + 1) + " a Torre " + (j + 1);
-            sucesores.push({ nuevoEstado: nuevoEstado, movimiento: movimiento });
+          const destinoVacio = estado[j].length === 0;
+          const discoDestinoMayor = estado[j][estado[j].length - 1] > disco;
+
+          // Valida la regla de las Torres de Hanói
+          if (destinoVacio || discoDestinoMayor) {
+            const nuevoEstado = copiarEstado(estado);
+            nuevoEstado[j].push(nuevoEstado[i].pop()!); // Mueve el disco
+            
+            const movimiento = `Mover disco ${disco} de Torre ${i + 1} a Torre ${j + 1}`;
+            sucesores.push({ nuevoEstado, movimiento });
           }
         }
       }
@@ -163,34 +212,45 @@ export function generarSucesores(estado: Estado): { nuevoEstado: Estado; movimie
 // ALGORITMO A* PRINCIPAL
 // ==============================
 
-// Equivalente a a_estrella() en 
-export function aEstrella(
-  nDiscos: number,
-  tipoHeuristica: number,
-  formula: string
-): Resultado {
+/**
+ * Propósito: Ejecuta la búsqueda A* para encontrar el camino más corto al estado objetivo.
+ * Recibe   : nDiscos, tipoHeuristica (1=Clásica, 2=Personalizada), formula
+ * Retorna  : Objeto Resultado (pasos, iteraciones, métricas).
+ * * --- EJEMPLO DE FLUJO (3 Discos) ---
+ * * PASO 0 (Configuración): 
+ *   - Estado Inicial: [[3,2,1], [], []], Objetivo: [[], [], [3,2,1]]
+ *   - g(n)=0, h(n)=3, f(n)=3. Se añade a la lista "Abiertos".
+ * 
+ * * ITERACIÓN 1:
+ *   - Seleccionado de Abiertos: [[3,2,1], [], []] (el único con menor f=3)
+ *   - Sucesores Generados: 
+ *     1. [[3,2], [1], []] -> g=1, h=2, f=3
+ *     2. [[3,2], [], [1]] -> g=1, h=2, f=3
+ *   - Se guardan en "Abiertos" y se marca el inicial como "Cerrado".
+ * 
+ * * ITERACIÓN 2:
+ *   - Seleccionado de Abiertos: [[3,2], [1], []] (f=3)
+ *   - Sucesores Generados: 
+ *     1. [[3], [1], [2]] -> g=2, h=2, f=4
+ *     2. [[3,2,1], [], []] -> (Ignorado por estar en "Cerrados")
+ *   - El proceso continúa hasta que el estado seleccionado sea igual al objetivo.
+ */
+export function aEstrella(nDiscos: number, tipoHeuristica: number, formula: string): Resultado {
 
-  // Estado inicial: todos los discos en la torre 1 (índice 0)
-  // Equivalente a: estado_inicial = [list(range(n_discos, 0, -1)), [], []]
-  var estadoInicial: Estado = [[], [], []];
-  for (var i = nDiscos; i >= 1; i--) {
+  // 1. CONFIGURACIÓN INICIAL DEL TABLERO
+  const estadoInicial: Estado = [[], [], []];
+  const estadoObjetivo: Estado = [[], [], []];
+  const torreObjetivo = 2;
+
+  // Llenar torre 1 (inicial) y torre 3 (objetivo) con discos [n, n-1, ..., 1]
+  for (let i = nDiscos; i >= 1; i--) {
     estadoInicial[0].push(i);
-  }
-
-  // Estado objetivo: todos los discos en la torre 3 (índice 2)
-  // Equivalente a: estado_objetivo = [[], [], list(range(n_discos, 0, -1))]
-  var estadoObjetivo: Estado = [[], [], []];
-  for (var i = nDiscos; i >= 1; i--) {
     estadoObjetivo[2].push(i);
   }
-  var torreObjetivo = 2;
 
-  // Texto del estado objetivo para comparar
-  var estadoObjetivoTexto = estadoATexto(estadoObjetivo);
+  const estadoObjetivoTexto = estadoATexto(estadoObjetivo);
 
-  // Lista de nodos abiertos
-  // abiertos = []  (con heapq)
-  // Aquí usamos un arreglo y buscamos el menor f manualmente
+  // 2. ESTRUCTURAS DE DATOS DE A*
   interface NodoAbierto {
     f: number;
     g: number;
@@ -199,129 +259,79 @@ export function aEstrella(
     pasos: Paso[];
   }
 
-  var abiertos: NodoAbierto[] = [];
+  const abiertos: NodoAbierto[] = [];
+  const cerrados = new Set<string>();
 
-  // Conjunto de cerrados
-  // cerrados = set()
-  var cerrados = new Set<string>();
+  // 3. CALCULAR NODO RAÍZ (INICIAL)
+  const gInicial = 0;
+  const hInicial = tipoHeuristica === 1 
+    ? heuristicaClasica(estadoInicial, torreObjetivo) 
+    : heuristicaPersonalizada(estadoInicial, torreObjetivo, formula, nDiscos);
+  const fInicial = gInicial + hInicial;
 
-  // Calcular valores iniciales
-  var gInicial = 0;
-  var hInicial: number;
-
-  if (tipoHeuristica === 1) {
-    hInicial = heuristicaClasica(estadoInicial, torreObjetivo);
-  } else {
-    hInicial = heuristicaPersonalizada(estadoInicial, torreObjetivo, formula, nDiscos);
-  }
-
-  var fInicial = gInicial + hInicial;
-
-  // Agregar nodo inicial
-  // heapq.heappush(abiertos, (f_inicial, g_inicial, estado_inicial, []))
   abiertos.push({
     f: fInicial,
     g: gInicial,
     estado: estadoInicial,
     camino: [],
-    pasos: [{
-      estado: estadoInicial,
-      g: gInicial,
-      h: hInicial,
-      f: fInicial,
-      movimiento: "Estado inicial",
-    }],
+    pasos: [{ estado: estadoInicial, g: gInicial, h: hInicial, f: fInicial, movimiento: "Estado inicial" }],
   });
 
-  var paso = 0;
-  var iteraciones: Iteracion[] = [];
+  let paso = 0;
+  const iteraciones: Iteracion[] = [];
 
-  // Bucle principal
-  // while abiertos:
+  // 4. BUCLE PRINCIPAL DE BÚSQUEDA
   while (abiertos.length > 0) {
 
-    // Buscar el nodo con menor f(n) (equivalente a heapq.heappop)
-    var indiceMejor = 0;
-    for (var i = 1; i < abiertos.length; i++) {
+    // Extraer el nodo con el menor f(n)
+    let indiceMejor = 0;
+    for (let i = 1; i < abiertos.length; i++) {
       if (abiertos[i].f < abiertos[indiceMejor].f) {
         indiceMejor = i;
       }
     }
 
-    // Extraer el mejor nodo
-    // f_actual, g_actual, estado_actual, camino = heapq.heappop(abiertos)
-    var nodoActual = abiertos.splice(indiceMejor, 1)[0];
-    var fActual = nodoActual.f;
-    var gActual = nodoActual.g;
-    var estadoActual = nodoActual.estado;
-    var caminoActual = nodoActual.camino;
-    var pasosActuales = nodoActual.pasos;
+    const nodoActual = abiertos.splice(indiceMejor, 1)[0];
+    const { f: fActual, g: gActual, estado: estadoActual, camino: caminoActual, pasos: pasosActuales } = nodoActual;
+    const estadoTexto = estadoATexto(estadoActual);
 
-    // estado_t = estado_a_tupla(estado_actual)
-    var estadoTexto = estadoATexto(estadoActual);
-
-    // if estado_t in cerrados: continue
-    if (cerrados.has(estadoTexto)) {
-      continue;
-    }
-
-    // cerrados.add(estado_t)
+    // Evitar procesar estados ya visitados (ciclos)
+    if (cerrados.has(estadoTexto)) continue;
     cerrados.add(estadoTexto);
 
-    // Generar sucesores para mostrar en iteraciones
-    var sucesores = generarSucesores(estadoActual);
+    // Generar sucesores del nodo actual
+    const sucesores = generarSucesores(estadoActual);
+    console.log(sucesores)
 
-    // Calcular datos de cada sucesor
-    var sucesoresConDatos = [];
-    for (var i = 0; i < sucesores.length; i++) {
-      var sucesor = sucesores[i];
-      var gSucesor = gActual + 1;
-      var hSucesor: number;
-
-      if (tipoHeuristica === 1) {
-        hSucesor = heuristicaClasica(sucesor.nuevoEstado, torreObjetivo);
-      } else {
-        hSucesor = heuristicaPersonalizada(sucesor.nuevoEstado, torreObjetivo, formula, nDiscos);
-      }
-
-      sucesoresConDatos.push({
+    // 5. REGISTRAR DATOS PARA LA INTERFAZ GRÁFICA (ITERACIÓN)
+    const sucesoresConDatos = sucesores.map((sucesor) => {
+      const gSucesor = gActual + 1;
+      const hSucesor = tipoHeuristica === 1 
+        ? heuristicaClasica(sucesor.nuevoEstado, torreObjetivo) 
+        : heuristicaPersonalizada(sucesor.nuevoEstado, torreObjetivo, formula, nDiscos);
+      
+      return {
         estado: sucesor.nuevoEstado,
         movimiento: sucesor.movimiento,
         g: gSucesor,
         h: hSucesor,
         f: gSucesor + hSucesor,
-      });
-    }
-
-    // Guardar los nodos abiertos como texto (equivalente al print de abiertos en )
-    var abiertosTexto: string[] = [];
-    for (var i = 0; i < abiertos.length; i++) {
-      abiertosTexto.push(estadoATexto(abiertos[i].estado));
-    }
-
-    // Guardar los nodos cerrados como texto (equivalente al print de cerrados en )
-    var cerradosTexto: string[] = [];
-    cerrados.forEach(function (valor) {
-      cerradosTexto.push(valor);
+      };
     });
 
-    // Guardar iteración (equivalente al modo == 1 en )
     iteraciones.push({
       numeroPaso: paso,
       estadoActual: estadoActual,
       g: gActual,
       h: fActual - gActual,
       f: fActual,
-      movimiento: caminoActual.length > 0
-        ? caminoActual[caminoActual.length - 1]
-        : "Estado inicial",
-      nodosAbiertos: abiertosTexto,
-      nodosCerrados: cerradosTexto,
+      movimiento: caminoActual.length > 0 ? caminoActual[caminoActual.length - 1] : "Estado inicial",
+      nodosAbiertos: abiertos.map(n => estadoATexto(n.estado)),
+      nodosCerrados: Array.from(cerrados),
       sucesoresGenerados: sucesoresConDatos,
     });
 
-    // Verificar si llegamos al objetivo
-    // if estado_actual == estado_objetivo:
+    // 6. VERIFICAR CONDICIÓN DE ÉXITO
     if (estadoTexto === estadoObjetivoTexto) {
       return {
         pasos: pasosActuales,
@@ -332,52 +342,34 @@ export function aEstrella(
       };
     }
 
-    // Explorar sucesores
-    // for sucesor, movimiento in generar_sucesores(estado_actual):
-    for (var i = 0; i < sucesores.length; i++) {
-      var sucesor = sucesores[i];
-      var sucesorTexto = estadoATexto(sucesor.nuevoEstado);
+    // 7. AÑADIR SUCESORES VÁLIDOS A LA LISTA DE ABIERTOS
+    for (const sucesor of sucesoresConDatos) {
+      const sucesorTexto = estadoATexto(sucesor.estado);
 
-      // if sucesor_t not in cerrados:
       if (!cerrados.has(sucesorTexto)) {
-        var gNuevo = gActual + 1;
-        var hNuevo: number;
-
-        if (tipoHeuristica === 1) {
-          hNuevo = heuristicaClasica(sucesor.nuevoEstado, torreObjetivo);
-        } else {
-          hNuevo = heuristicaPersonalizada(sucesor.nuevoEstado, torreObjetivo, formula, nDiscos);
-        }
-
-        var fNuevo = gNuevo + hNuevo;
-
-        // heapq.heappush(abiertos, (f_nuevo, g_nuevo, sucesor, camino + [movimiento]))
         abiertos.push({
-          f: fNuevo,
-          g: gNuevo,
-          estado: sucesor.nuevoEstado,
+          f: sucesor.f,
+          g: sucesor.g,
+          estado: sucesor.estado,
           camino: [...caminoActual, sucesor.movimiento],
           pasos: [...pasosActuales, {
-            estado: sucesor.nuevoEstado,
-            g: gNuevo,
-            h: hNuevo,
-            f: fNuevo,
+            estado: sucesor.estado,
+            g: sucesor.g,
+            h: sucesor.h,
+            f: sucesor.f,
             movimiento: sucesor.movimiento,
           }],
         });
       }
     }
 
-    // paso += 1
-    paso = paso + 1;
+    paso++;
 
-    // Seguridad: evitar bucles infinitos
-    if (paso > 20000) {
-      break;
-    }
+    // Seguro de vida: prevenir colapsos del navegador
+    if (paso > 20000) break; 
   }
 
-  // No se encontró solución
+  // 8. RETORNO SI NO HAY SOLUCIÓN (O SI SE EXCEDIÓ EL LÍMITE)
   return {
     pasos: [],
     iteraciones: iteraciones,

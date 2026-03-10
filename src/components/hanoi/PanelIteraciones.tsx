@@ -181,7 +181,7 @@ export function PanelIteraciones({
       </Card>
 
       {/* Lista de todas las iteraciones */}
-      <Card className="border-slate-200 shadow-sm bg-white flex-1 flex flex-col overflow-hidden min-h-0">
+      <Card className="border-slate-200 shadow-sm bg-white flex-1 flex flex-col overflow-hidden max-h-100">
         <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50 shrink-0">
           <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
             <ListTree className="h-3.5 w-3.5 text-slate-400" />
