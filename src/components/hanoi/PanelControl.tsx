@@ -67,7 +67,7 @@ export function PanelControl({
           <Slider
             value={[numeroDiscos]}
             min={3}
-            max={7}
+            max={11}
             step={1}
             onValueChange={(valor) => cambiarNumeroDiscos(valor[0])}
           />

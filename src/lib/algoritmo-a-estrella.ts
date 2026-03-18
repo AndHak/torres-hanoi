@@ -66,7 +66,7 @@ export interface ObjetivoHeuristica {
 export const HEURISTICAS_DISPONIBLES: HeuristicaDisponible[] = [
   {
     id: 1,
-    nombre: "Clasica",
+    nombre: "Contar discos fuera",
     descripcion: "Cuenta cuantos discos estan fuera de la torre objetivo.",
   },
   {
@@ -174,6 +174,7 @@ export function copiarEstado(estado: Estado): Estado {
 
 /**
  * Proposito: Cuenta cuantos discos NO estan en la torre objetivo.
+ * Nota     : Esta funcion tambien se usa como la heuristica tipo 1.
  * Recibe   : estado (Estado), torreObjetivo (number: 0, 1 o 2)
  * Retorna  : number -> Cantidad de discos fuera de su lugar.
  * * --- EJEMPLOS DE ENTRADA Y SALIDA ---
@@ -193,22 +194,6 @@ export function contarDiscosFuera(estado: Estado, torreObjetivo: number): number
   }
 
   return total;
-}
-
-/**
- * Proposito: Estimar h(n) contando 1 punto por cada disco fuera de la torre objetivo.
- * Regla    : Todos los discos que no estan en la torre final suman lo mismo (peso 1).
- * Recibe   : estado (Estado), torreObjetivo (number: 0, 1 o 2)
- * Retorna  : number -> Total de discos fuera de objetivo.
- * * --- EJEMPLOS DE ENTRADA Y SALIDA ---
- * Entrada: estado: [[3,2], [1], []], torreObjetivo: 2
- * Salida : 3 (Los discos 3, 2 y 1 estan fuera de la torre 3)
- *
- * Entrada: estado: [[], [], [3,2,1]], torreObjetivo: 2
- * Salida : 0 (Todos los discos ya estan en la torre objetivo)
- */
-export function heuristicaClasica(estado: Estado, torreObjetivo: number): number {
-  return contarDiscosFuera(estado, torreObjetivo);
 }
 
 /**
@@ -355,7 +340,7 @@ export function generarSucesores(estado: Estado): { nuevoEstado: Estado; movimie
 
 /**
  * Proposito: Ejecuta la busqueda A* para encontrar el camino mas corto al estado objetivo.
- * Recibe   : nDiscos, tipoHeuristica (1=Clasica, 2=Por peso, 3=Exponencial, 4=Bloqueadores)
+ * Recibe   : nDiscos, tipoHeuristica (1=Contar discos fuera, 2=Por peso, 3=Exponencial, 4=Bloqueadores)
  * Retorna  : Objeto Resultado (pasos, iteraciones, metricas).
  * * --- EJEMPLO DE FLUJO (3 Discos) ---
  * * PASO 0 (Configuracion):
@@ -393,7 +378,7 @@ export function aEstrella(nDiscos: number, tipoHeuristica: TipoHeuristica): Resu
   const calcularH = (estadoEvaluar: Estado) => {
     switch (tipoHeuristica) {
       case 1:
-        return heuristicaClasica(estadoEvaluar, torreObjetivo);
+        return contarDiscosFuera(estadoEvaluar, torreObjetivo);
       case 2:
         return heuristicaPorPeso(estadoEvaluar, torreObjetivo);
       case 3:
@@ -401,7 +386,7 @@ export function aEstrella(nDiscos: number, tipoHeuristica: TipoHeuristica): Resu
       case 4:
         return heuristicaBloqueadores(estadoEvaluar, torreObjetivo);
       default:
-        return heuristicaClasica(estadoEvaluar, torreObjetivo);
+        return contarDiscosFuera(estadoEvaluar, torreObjetivo);
     }
   };
 
