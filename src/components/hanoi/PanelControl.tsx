@@ -1,26 +1,30 @@
-"use client";
+﻿"use client";
 
 import { Cpu, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  calcularMovimientosOptimos,
+  HEURISTICAS_DISPONIBLES,
+  obtenerObjetivoHeuristica,
+  TipoHeuristica,
+} from "@/lib/algoritmo-a-estrella";
 
 interface PropsPanelControl {
   numeroDiscos: number;
   cambiarNumeroDiscos: (n: number) => void;
-  tipoHeuristica: number;
-  cambiarTipoHeuristica: (t: number) => void;
-  formula: string;
-  cambiarFormula: (f: string) => void;
+  tipoHeuristica: TipoHeuristica;
+  cambiarTipoHeuristica: (t: TipoHeuristica) => void;
   modoVisualizacion: "movimientos" | "iteraciones";
   cambiarModoVisualizacion: (m: "movimientos" | "iteraciones") => void;
   velocidad: number;
@@ -34,8 +38,6 @@ export function PanelControl({
   cambiarNumeroDiscos,
   tipoHeuristica,
   cambiarTipoHeuristica,
-  formula,
-  cambiarFormula,
   modoVisualizacion,
   cambiarModoVisualizacion,
   velocidad,
@@ -43,115 +45,88 @@ export function PanelControl({
   resolviendo,
   ejecutarAlgoritmo,
 }: PropsPanelControl) {
+  const heuristicaActual = HEURISTICAS_DISPONIBLES.find((heuristica) => heuristica.id === tipoHeuristica);
+  const objetivoHeuristica = obtenerObjetivoHeuristica(tipoHeuristica, numeroDiscos);
+  const movimientosOptimos = calcularMovimientosOptimos(numeroDiscos);
+
   return (
     <Card className="border-slate-200 shadow-sm bg-white">
       <CardHeader className="pb-3 border-b border-slate-100">
         <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-700">
-          <Settings2 className="h-4 w-4 text-slate-400" /> Configuración
+          <Settings2 className="h-4 w-4 text-slate-400" /> Configuracion
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-5 pt-5">
-        {/* Número de discos */}
+        {/* Cantidad de discos */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-              Discos
-            </Label>
-            <span className="text-xs font-mono font-bold bg-slate-100 px-2 py-0.5 rounded">
-              {numeroDiscos}
-            </span>
+            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Discos</Label>
+            <span className="text-xs font-mono font-bold bg-slate-100 px-2 py-0.5 rounded">{numeroDiscos}</span>
           </div>
           <Slider
             value={[numeroDiscos]}
             min={3}
             max={7}
             step={1}
-            onValueChange={function (valor) { cambiarNumeroDiscos(valor[0]); }}
+            onValueChange={(valor) => cambiarNumeroDiscos(valor[0])}
           />
         </div>
 
         <Separator className="bg-slate-100" />
 
-        {/* Seleccionar heurística */}
+        {/* Selector de heuristica */}
         <div className="space-y-2">
-          <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-            Heurística
-          </Label>
-          <div className="space-y-1.5">
-            {/* Opción 1: Clásica */}
-            <button
-              onClick={function () { cambiarTipoHeuristica(1); }}
-              className={
-                "w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all " +
-                (tipoHeuristica === 1
-                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300")
-              }
-            >
-              <span className="font-bold">1. Clásica</span>
-              <p className={
-                "text-[10px] mt-0.5 " +
-                (tipoHeuristica === 1 ? "text-white/70" : "text-slate-400")
-              }>
-                Discos fuera de la torre destino
-              </p>
-            </button>
+          <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Heuristica</Label>
 
-            {/* Opción 2: Personalizada */}
-            <button
-              onClick={function () { cambiarTipoHeuristica(2); }}
-              className={
-                "w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all " +
-                (tipoHeuristica === 2
-                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300")
-              }
-            >
-              <span className="font-bold">2. Personalizada</span>
-              <p className={
-                "text-[10px] mt-0.5 " +
-                (tipoHeuristica === 2 ? "text-white/70" : "text-slate-400")
-              }>
-                Escribir fórmula matemática
-              </p>
-            </button>
+          <Select
+            value={String(tipoHeuristica)}
+            onValueChange={(value) => cambiarTipoHeuristica(Number(value) as TipoHeuristica)}
+          >
+            <SelectTrigger className="w-full h-10 rounded-lg text-xs font-semibold text-slate-700">
+              <SelectValue placeholder="Seleccione una heuristica" />
+            </SelectTrigger>
+            <SelectContent>
+            {HEURISTICAS_DISPONIBLES.map((heuristica) => (
+              <SelectItem key={heuristica.id} value={String(heuristica.id)}>
+                {heuristica.id}. {heuristica.nombre}
+              </SelectItem>
+            ))}
+            </SelectContent>
+          </Select>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Descripcion</p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              {heuristicaActual?.descripcion}
+            </p>
+          </div>
+
+          {/* Referencias para saber hacia que valor deberia ir la busqueda */}
+          <div className="rounded-lg border border-slate-100 bg-white p-2.5 space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Valor objetivo</p>
+            <p className="text-[11px] text-slate-600">
+              h(n) meta: <span className="font-bold">{objetivoHeuristica.valorMeta}</span>
+            </p>
+            <p className="text-[11px] text-slate-600">
+              Referencia inicial: <span className="font-mono">{objetivoHeuristica.formula}</span> ={" "}
+              <span className="font-bold">{objetivoHeuristica.valorReferencia}</span>
+            </p>
+            <p className="text-[11px] text-slate-600">
+              Movimientos minimos de Hanoi: <span className="font-mono">2^n - 1</span> ={" "}
+              <span className="font-bold">{movimientosOptimos}</span>
+            </p>
           </div>
         </div>
 
-        {/* Campo de fórmula (solo si tipo 2) */}
-        {tipoHeuristica === 2 && (
-          <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
-            <Label className="text-[10px] font-bold text-slate-400 uppercase">
-              Fórmula heurística
-            </Label>
-            <Input
-              value={formula}
-              onChange={function (e) { cambiarFormula(e.target.value); }}
-              className="h-9 text-xs font-mono bg-white border-slate-200"
-              placeholder="2**k - 1"
-            />
-            <div className="text-[9px] text-slate-400 space-y-0.5">
-              <p className="font-bold">Variables disponibles:</p>
-              <p>k → discos fuera de la torre destino</p>
-              <p>n → número total de discos</p>
-              <p>math.log(), math.sqrt(), math.pow()</p>
-              <p className="font-bold pt-1">Ejemplos:</p>
-              <p>k &nbsp;|&nbsp; 2*k &nbsp;|&nbsp; 2**k - 1 &nbsp;|&nbsp; k**2 &nbsp;|&nbsp; math.log(k+1)</p>
-            </div>
-          </div>
-        )}
-
         <Separator className="bg-slate-100" />
 
-        {/* Modo de ejecución */}
+        {/* Modo de visualizacion */}
         <div className="space-y-2">
-          <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-            Modo de ejecución
-          </Label>
+          <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Modo de ejecucion</Label>
           <div className="grid grid-cols-2 gap-1.5">
             <button
-              onClick={function () { cambiarModoVisualizacion("movimientos"); }}
+              onClick={() => cambiarModoVisualizacion("movimientos")}
               className={
                 "px-3 py-2 rounded-lg border text-xs font-bold transition-all text-center " +
                 (modoVisualizacion === "movimientos"
@@ -162,7 +137,7 @@ export function PanelControl({
               Solo Resultado
             </button>
             <button
-              onClick={function () { cambiarModoVisualizacion("iteraciones"); }}
+              onClick={() => cambiarModoVisualizacion("iteraciones")}
               className={
                 "px-3 py-2 rounded-lg border text-xs font-bold transition-all text-center " +
                 (modoVisualizacion === "iteraciones"
@@ -177,12 +152,10 @@ export function PanelControl({
 
         <Separator className="bg-slate-100" />
 
-        {/* Velocidad de reproducción */}
+        {/* Velocidad del autoplay */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-              Velocidad
-            </Label>
+            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Velocidad</Label>
             <span className="text-xs font-mono text-slate-500">{velocidad}ms</span>
           </div>
           <Slider
@@ -190,7 +163,7 @@ export function PanelControl({
             min={100}
             max={2000}
             step={100}
-            onValueChange={function (valor) { cambiarVelocidad(valor[0]); }}
+            onValueChange={(valor) => cambiarVelocidad(valor[0])}
           />
         </div>
       </CardContent>
